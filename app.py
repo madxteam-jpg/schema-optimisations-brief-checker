@@ -1,6 +1,8 @@
+import io
 import os
 import streamlit as st
 from pypdf import PdfReader
+from PIL import Image, ImageDraw, ImageFont
 from google import genai
 from google.genai import types
 
@@ -56,9 +58,8 @@ def analyze_brief_with_gemini(api_key: str, brief_text: str) -> BriefAuditReport
     6. Provide a score (0-100) and actionable recommendations categorized by Blocker, Warning, or Opportunity.
     """
 
-    # Enforce Pydantic schema in LLM call
     response = client.models.generate_content(
-        model="gemini-3.5-flash",  # ✅ Updated supported model
+        model="gemini-3.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
@@ -67,8 +68,70 @@ def analyze_brief_with_gemini(api_key: str, brief_text: str) -> BriefAuditReport
         )
     )
 
-    # Parse JSON output directly into Pydantic model
     return BriefAuditReport.model_validate_json(response.text)
+
+
+def create_scorecard_image(report: BriefAuditReport, filename: str) -> bytes:
+    """Generates a professional PNG scorecard image as audit proof."""
+    width, height = 800, 600
+    img = Image.new("RGB", (width, height), color=(248, 249, 250))
+    draw = ImageDraw.Draw(img)
+
+    # Use default bitmap font
+    font = ImageFont.load_default()
+
+    # Outer Border & Header Box
+    draw.rectangle([(20, 20), (780, 580)], outline=(200, 200, 200), width=2)
+    draw.rectangle([(20, 20), (780, 100)], fill=(30, 41, 59))
+
+    # Header Text
+    draw.text((40, 35), "SCHEMA OPTIMISATION BRIEF AUDIT PROOF", fill=(255, 255, 255), font=font)
+    draw.text((40, 60), f"File: {filename}", fill=(203, 213, 225), font=font)
+
+    # Score Card Banner
+    score = report.overall_score
+    if score >= 80:
+        score_color = (22, 101, 52)  # Green
+    elif score >= 50:
+        score_color = (161, 98, 7)   # Yellow/Amber
+    else:
+        score_color = (153, 27, 27)  # Red
+
+    draw.rectangle([(40, 120), (760, 210)], fill=score_color)
+    draw.text((60, 140), f"HEALTH SCORE: {score}/100", fill=(255, 255, 255), font=font)
+    draw.text((60, 170), f"STATUS: {report.score_label}", fill=(255, 255, 255), font=font)
+
+    # Extracted Details Box
+    draw.rectangle([(40, 230), (760, 380)], outline=(226, 232, 240), fill=(255, 255, 255), width=2)
+    draw.text((60, 245), f"Client / Brand: {report.extracted_brief.client_name}", fill=(15, 23, 42), font=font)
+    draw.text((60, 270), f"Target Page Type: {report.extracted_brief.target_page_type}", fill=(15, 23, 42), font=font)
+    draw.text((60, 295), f"Primary Objective: {report.extracted_brief.primary_seo_objective}", fill=(15, 23, 42), font=font)
+    
+    schemas_str = ", ".join(report.extracted_brief.requested_schema_types) or "None specified"
+    draw.text((60, 320), f"Requested Schemas: {schemas_str}", fill=(15, 23, 42), font=font)
+    
+    missing_str = ", ".join(report.missing_mandatory_fields) if report.missing_mandatory_fields else "None"
+    draw.text((60, 345), f"Missing Mandatory Fields: {missing_str}", fill=(185, 28, 28) if report.missing_mandatory_fields else (22, 101, 52), font=font)
+
+    # Executive Summary Text
+    draw.rectangle([(40, 400), (760, 540)], outline=(226, 232, 240), fill=(255, 255, 255), width=2)
+    draw.text((60, 415), "Executive Summary:", fill=(15, 23, 42), font=font)
+    
+    # Wrap executive summary simple line splitting
+    summary = report.executive_summary
+    lines = [summary[i:i+90] for i in range(0, min(len(summary), 270), 90)]
+    y_offset = 440
+    for line in lines:
+        draw.text((60, y_offset), line, fill=(71, 85, 105), font=font)
+        y_offset += 20
+
+    # Footer Timestamp
+    draw.text((40, 555), "Verified by Schema Optimisation Brief Checker", fill=(148, 163, 184), font=font)
+
+    # Convert image to byte buffer
+    buffer = io.BytesIO()
+    img.save(buffer, format="PNG")
+    return buffer.getvalue()
 
 
 # Sidebar Configuration
@@ -163,6 +226,23 @@ if uploaded_file is not None:
                             with box(f"{icon} [{issue.severity.upper()}] {issue.issue_title} ({issue.category})"):
                                 st.write(f"**Why this matters:** {issue.explanation}")
                                 st.write(f"**Recommended Action:** {issue.recommendation}")
+
+                        st.divider()
+
+                        # --- IMAGE DOWNLOAD BUTTON AT THE BOTTOM ---
+                        st.subheader("📸 Audit Proof Image Export")
+                        st.caption("Generate a downloadable PNG proof card to attach to tickets or upload as proof.")
+                        
+                        image_bytes = create_scorecard_image(report, uploaded_file.name)
+                        
+                        st.download_button(
+                            label="📸 Download Audit Proof Image (PNG)",
+                            data=image_bytes,
+                            file_name=f"audit_proof_{uploaded_file.name.replace('.pdf', '')}.png",
+                            mime="image/png",
+                            type="secondary",
+                            use_container_width=True
+                        )
 
                 except Exception as e:
                     st.error(f"An error occurred during audit: {str(e)}")
