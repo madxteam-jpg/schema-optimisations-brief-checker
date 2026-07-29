@@ -58,7 +58,7 @@ def analyze_brief_with_gemini(api_key: str, brief_text: str) -> BriefAuditReport
 
     # Enforce Pydantic schema in LLM call
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.5-flash",  # ✅ Updated supported model
         contents=prompt,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
