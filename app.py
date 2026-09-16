@@ -158,7 +158,10 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans
 def generate_full_report_screenshot(html_content: str) -> bytes:
     """Uses Playwright to render HTML and capture a dynamic full-page PNG."""
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
+        browser = p.chromium.launch(
+            headless=True,
+            args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+        )
         context = browser.new_context(viewport={"width": 1200, "height": 800}, device_scale_factor=2)
         page = context.new_page()
         
