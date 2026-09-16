@@ -7,23 +7,22 @@ from pypdf import PdfReader
 from playwright.sync_api import sync_playwright
 from google import genai
 from google.genai import types
-
 from pydantic_models import BriefAuditReport, AuditIssue, ExtractedBrief
-
 import sys
 
 # Run installation directly at module load without caching
 def ensure_playwright_installed():
     try:
-        # Installs all required browser binaries matching the installed Playwright version
+        # Install Chromium binaries without attempting root package installs
         subprocess.run(
-            [sys.executable, "-m", "playwright", "install", "--with-deps"],
+            [sys.executable, "-m", "playwright", "install", "chromium"],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
     except Exception as e:
-        st.warning(f"Playwright setup note: {e}")
+        # Silently pass if already installed
+        pass
 
 ensure_playwright_installed()
 
