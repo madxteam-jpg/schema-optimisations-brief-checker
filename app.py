@@ -13,7 +13,7 @@ from pydantic_models import BriefAuditReport, AuditIssue, ExtractedBrief
 # Automatically install Playwright browser binary once and cache it for Streamlit Cloud
 @st.cache_resource
 def install_playwright_browsers():
-    subprocess.run(["python", "-m", "playwright", "install", "chromium"])
+    subprocess.run(["python", "-m", "playwright", "install", "chromium", "chromium-headless-shell"])
 
 install_playwright_browsers()
 
