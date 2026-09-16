@@ -81,11 +81,10 @@ def analyze_brief_with_gemini(api_key: str, brief_text: str) -> BriefAuditReport
 
 
 def render_full_report_html(report: BriefAuditReport, filename: str) -> str:
-    """Generates a complete, responsive HTML layout matching your Pydantic schema."""
+    """Generates clean HTML without leading spaces so Streamlit doesn't render code blocks."""
     score = report.overall_score
     score_color = "#2e7d32" if score >= 80 else ("#ef6c00" if score >= 50 else "#c62828")
 
-    # Render audit_findings using your AuditIssue model structure
     findings_html = ""
     for issue in report.audit_findings:
         sev = issue.severity.lower()
@@ -96,16 +95,7 @@ def render_full_report_html(report: BriefAuditReport, filename: str) -> str:
         else:
             badge_bg, badge_color = "#e3f2fd", "#1565c0"
 
-        findings_html += f"""
-        <div style="background-color: #fafafa; border: 1px solid #e0e0e0; border-left: 5px solid {badge_color}; border-radius: 6px; padding: 14px; margin-bottom: 12px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
-                <span style="font-weight: bold; font-size: 15px; color: #212529;">{issue.issue_title}</span>
-                <span style="background-color: {badge_bg}; color: {badge_color}; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;">{issue.severity} • {issue.category}</span>
-            </div>
-            <p style="margin: 4px 0; font-size: 13px; color: #424242;"><b>Why this matters:</b> {issue.explanation}</p>
-            <p style="margin: 4px 0; font-size: 13px; color: #1565c0;"><b>Recommendation:</b> {issue.recommendation}</p>
-        </div>
-        """
+        findings_html += f"<div style='background-color: #fafafa; border: 1px solid #e0e0e0; border-left: 5px solid {badge_color}; border-radius: 6px; padding: 14px; margin-bottom: 12px;'><div style='display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;'><span style='font-weight: bold; font-size: 15px; color: #212529;'>{issue.issue_title}</span><span style='background-color: {badge_bg}; color: {badge_color}; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase;'>{issue.severity} • {issue.category}</span></div><p style='margin: 4px 0; font-size: 13px; color: #424242;'><b>Why this matters:</b> {issue.explanation}</p><p style='margin: 4px 0; font-size: 13px; color: #1565c0;'><b>Recommendation:</b> {issue.recommendation}</p></div>"
 
     client_name = report.extracted_brief.client_name or "N/A"
     req_schemas = ", ".join(report.extracted_brief.requested_schema_types) or "None specified"
@@ -118,110 +108,48 @@ def render_full_report_html(report: BriefAuditReport, filename: str) -> str:
 <head>
 <meta charset="utf-8">
 <style>
-    * {{ box-sizing: border-box; }}
-    body {{
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        background-color: #ffffff;
-        margin: 0;
-        padding: 24px;
-        color: #212529;
-    }}
-    .container {{
-        background: #ffffff;
-        padding: 28px;
-        border-radius: 10px;
-        border: 2px solid #e9ecef;
-        max-width: 1100px;
-        margin: 0 auto;
-    }}
-    .header {{
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border-bottom: 2px solid #e9ecef;
-        padding-bottom: 16px;
-        margin-bottom: 20px;
-    }}
-    .metrics-box {{
-        display: flex;
-        justify-content: space-between;
-        background-color: #f8f9fa;
-        padding: 18px;
-        border-radius: 8px;
-        margin-bottom: 24px;
-        border: 1px solid #e9ecef;
-    }}
-    .score-circle {{
-        font-size: 32px;
-        font-weight: bold;
-        color: {score_color};
-    }}
-    .section-title {{
-        font-size: 18px;
-        font-weight: 600;
-        color: #343a40;
-        margin-top: 24px;
-        margin-bottom: 12px;
-        border-bottom: 1px solid #e9ecef;
-        padding-bottom: 6px;
-    }}
-    .grid-2 {{
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 16px;
-        background-color: #ffffff;
-        padding: 12px;
-        border: 1px solid #e9ecef;
-        border-radius: 6px;
-    }}
+* {{ box-sizing: border-box; }}
+body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #ffffff; margin: 0; padding: 15px; color: #212529; }}
+.container {{ background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #e9ecef; width: 100%; }}
+.header {{ display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e9ecef; padding-bottom: 12px; margin-bottom: 16px; }}
+.metrics-box {{ display: flex; justify-content: space-around; background-color: #f8f9fa; padding: 14px; border-radius: 6px; margin-bottom: 20px; border: 1px solid #e9ecef; }}
+.score-circle {{ font-size: 28px; font-weight: bold; color: {score_color}; }}
+.section-title {{ font-size: 16px; font-weight: 600; color: #343a40; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #e9ecef; padding-bottom: 4px; }}
+.grid-2 {{ display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background-color: #ffffff; padding: 10px; border: 1px solid #e9ecef; border-radius: 6px; }}
 </style>
 </head>
 <body>
 <div class="container">
-    <div class="header">
-        <div>
-            <h2 style="margin: 0; color: #1E88E5;">🔍 Schema Brief Audit Summary</h2>
-            <p style="margin: 4px 0 0 0; color: #6c757d; font-size: 13px;">File: {filename}</p>
-        </div>
-        <div style="text-align: right;">
-            <span style="font-size: 12px; color: #6c757d;">AUDIT PROOF REPORT</span>
-        </div>
-    </div>
-
-    <div class="metrics-box">
-        <div>
-            <div style="font-size: 12px; color: #6c757d; font-weight: bold;">HEALTH SCORE</div>
-            <div class="score-circle">{score}/100</div>
-        </div>
-        <div>
-            <div style="font-size: 12px; color: #6c757d; font-weight: bold;">STATUS</div>
-            <div style="font-size: 20px; font-weight: bold; margin-top: 6px; color: #212529;">{report.score_label}</div>
-        </div>
-        <div style="max-width: 50%;">
-            <div style="font-size: 12px; color: #6c757d; font-weight: bold;">EXECUTIVE SUMMARY</div>
-            <div style="font-size: 13px; margin-top: 6px; color: #495057;">{report.executive_summary}</div>
-        </div>
-    </div>
-
-    <div class="section-title">📋 Extracted Brief Requirements</div>
-    <div class="grid-2">
-        <div>
-            <p style="margin: 4px 0; font-size: 13px;"><b>Client/Brand:</b> {client_name}</p>
-            <p style="margin: 4px 0; font-size: 13px;"><b>Target Page Type:</b> {report.extracted_brief.target_page_type}</p>
-            <p style="margin: 4px 0; font-size: 13px;"><b>SEO Objective:</b> {report.extracted_brief.primary_seo_objective}</p>
-        </div>
-        <div>
-            <p style="margin: 4px 0; font-size: 13px;"><b>Requested Schemas:</b> {req_schemas}</p>
-            <p style="margin: 4px 0; font-size: 13px;"><b>Specified Properties:</b> {spec_props}</p>
-            <p style="margin: 4px 0; font-size: 13px;"><b>Data Sources:</b> {data_srcs}</p>
-        </div>
-    </div>
-    <p style="margin-top: 8px; font-size: 13px; color: {'#c62828' if report.missing_mandatory_fields else '#2e7d32'};">
-        <b>Missing Mandatory Rich Result Fields:</b> {missing_fields}
-    </p>
-
-    <div class="section-title">🚨 Key Findings & Recommendations</div>
-    {findings_html}
+<div class="header">
+<div>
+<h3 style="margin: 0; color: #1E88E5;">🔍 Schema Brief Audit Summary</h3>
+<p style="margin: 2px 0 0 0; color: #6c757d; font-size: 12px;">File: {filename}</p>
+</div>
+<div><span style="font-size: 11px; color: #6c757d; font-weight: bold;">AUDIT PROOF REPORT</span></div>
+</div>
+<div class="metrics-box">
+<div><div style="font-size: 11px; color: #6c757d; font-weight: bold;">HEALTH SCORE</div><div class="score-circle">{score}/100</div></div>
+<div><div style="font-size: 11px; color: #6c757d; font-weight: bold;">STATUS</div><div style="font-size: 18px; font-weight: bold; margin-top: 4px; color: #212529;">{report.score_label}</div></div>
+<div style="max-width: 50%;"><div style="font-size: 11px; color: #6c757d; font-weight: bold;">EXECUTIVE SUMMARY</div><div style="font-size: 12px; margin-top: 4px; color: #495057;">{report.executive_summary}</div></div>
+</div>
+<div class="section-title">📋 Extracted Brief Requirements</div>
+<div class="grid-2">
+<div>
+<p style="margin: 3px 0; font-size: 12px;"><b>Client/Brand:</b> {client_name}</p>
+<p style="margin: 3px 0; font-size: 12px;"><b>Target Page Type:</b> {report.extracted_brief.target_page_type}</p>
+<p style="margin: 3px 0; font-size: 12px;"><b>SEO Objective:</b> {report.extracted_brief.primary_seo_objective}</p>
+</div>
+<div>
+<p style="margin: 3px 0; font-size: 12px;"><b>Requested Schemas:</b> {req_schemas}</p>
+<p style="margin: 3px 0; font-size: 12px;"><b>Specified Properties:</b> {spec_props}</p>
+<p style="margin: 3px 0; font-size: 12px;"><b>Data Sources:</b> {data_srcs}</p>
+</div>
+</div>
+<p style="margin-top: 6px; font-size: 12px; color: {'#c62828' if report.missing_mandatory_fields else '#2e7d32'};">
+<b>Missing Mandatory Rich Result Fields:</b> {missing_fields}
+</p>
+<div class="section-title">🚨 Key Findings & Recommendations</div>
+{findings_html}
 </div>
 </body>
 </html>"""
