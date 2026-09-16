@@ -68,7 +68,7 @@ def analyze_brief_with_gemini(api_key: str, brief_text: str) -> BriefAuditReport
     """
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.6-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             response_mime_type="application/json",
