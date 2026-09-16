@@ -11,11 +11,13 @@ from google.genai import types
 from pydantic_models import BriefAuditReport, AuditIssue, ExtractedBrief
 
 # Automatically install Playwright browser binary once and cache it for Streamlit Cloud
-@st.cache_resource
-def install_playwright_browsers():
+# Change the cache key name (e.g., adding v2) to force Streamlit to run it fresh
+@st.cache_resource(ttl=None)
+def install_playwright_browsers_v2():
+    import subprocess
     subprocess.run(["python", "-m", "playwright", "install", "chromium", "chromium-headless-shell"])
 
-install_playwright_browsers()
+install_playwright_browsers_v2()
 
 # Page configuration
 st.set_page_config(
