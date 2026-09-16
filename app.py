@@ -10,14 +10,23 @@ from google.genai import types
 
 from pydantic_models import BriefAuditReport, AuditIssue, ExtractedBrief
 
-# Automatically install Playwright browser binary once and cache it for Streamlit Cloud
-# Change the cache key name (e.g., adding v2) to force Streamlit to run it fresh
-@st.cache_resource(ttl=None)
-def install_playwright_browsers_v2():
-    import subprocess
-    subprocess.run(["python", "-m", "playwright", "install", "chromium", "chromium-headless-shell"])
+import sys
+import subprocess
 
-install_playwright_browsers_v2()
+# Run installation directly at module load without caching
+def ensure_playwright_installed():
+    try:
+        # Installs all required browser binaries matching the installed Playwright version
+        subprocess.run(
+            [sys.executable, "-m", "playwright", "install", "--with-deps"],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+    except Exception as e:
+        st.warning(f"Playwright setup note: {e}")
+
+ensure_playwright_installed()
 
 # Page configuration
 st.set_page_config(
@@ -160,9 +169,15 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans
 def generate_full_report_screenshot(html_content: str) -> bytes:
     """Uses Playwright to render HTML and capture a dynamic full-page PNG."""
     with sync_playwright() as p:
+        # Launch standard Chromium explicitly with safety flags
         browser = p.chromium.launch(
             headless=True,
-            args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+            args=[
+                "--no-sandbox",
+                "--disable-setuid-sandbox",
+                "--disable-dev-shm-usage",
+                "--single-process"
+            ]
         )
         context = browser.new_context(viewport={"width": 1200, "height": 800}, device_scale_factor=2)
         page = context.new_page()
