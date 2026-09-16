@@ -11,7 +11,6 @@ from google.genai import types
 from pydantic_models import BriefAuditReport, AuditIssue, ExtractedBrief
 
 import sys
-import subprocess
 
 # Run installation directly at module load without caching
 def ensure_playwright_installed():
